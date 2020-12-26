@@ -1,7 +1,7 @@
 {
-  "name": "react-node-boilerplate",
+  "name": "img-repo",
   "version": "1.0.0",
-  "description": "boilerplate for react and node.js app",
+  "description": "image repository built with React and Node.js",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/yebrandon/react-node-boilerplate#readme",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "firebase": "^8.2.1"
   }
 }
