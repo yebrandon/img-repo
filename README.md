@@ -1,9 +1,3 @@
-# React + Node.js App Boilerplate
+# Image Repository
 
-This repo can be used to quickstart a web application with React and Node.js.
-
-## Libraries
-
--   Semantic UI React
--   React Router
--   Express.js
+A web app for uploading and viewing images, developed for Shopify's Summer 2021 Developer Intern Challenge.
