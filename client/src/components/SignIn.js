@@ -13,6 +13,8 @@ import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 
+import { auth } from '../firebase';
+
 const Footer = () => {
 	return (
 		<Typography variant='body2' color='textSecondary' align='center'>
@@ -62,11 +64,18 @@ const SignIn = () => {
 	const [remember, setRemember] = useState(false);
 	const [error, setError] = useState(null);
 
-	const signInWithEmailAndPasswordHandler = (event, email, password) => {
+	const handleSubmit = (event) => {
 		event.preventDefault();
-	};
 
-	const handleSubmit = () => {};
+		auth.signInWithEmailAndPassword(email, password)
+			.then((user) => {
+				// Signed in
+				// ...
+			})
+			.catch((error) => {
+				setError(error.message);
+			});
+	};
 
 	const classes = useStyles();
 
@@ -135,7 +144,6 @@ const SignIn = () => {
 							variant='contained'
 							color='primary'
 							className={classes.submit}
-							onClick
 						>
 							Sign In
 						</Button>
