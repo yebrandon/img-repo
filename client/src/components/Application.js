@@ -1,12 +1,12 @@
 import React, { useContext } from 'react';
-import { HashRouter, Switch, Route } from 'react-router-dom';
+import { HashRouter, Switch, Route, Redirect } from 'react-router-dom';
 import NavBar from './NavBar';
 import Home from './Home';
 import SignIn from './SignIn';
 import SignUp from './SignUp';
 import ResetPassword from './ResetPassword';
 import { UserContext } from '../UserProvider';
-import Photos from './Photos';
+import Images from './Images';
 
 const Application = () => {
 	const user = useContext(UserContext);
@@ -17,7 +17,8 @@ const Application = () => {
 			<Switch>
 				<Route exact path='/' render={() => <Home />} />
 				<Route path='/home' render={() => <Home />} />
-				<Route path='/photos' render={() => <Photos />} />
+				<Route path='/images' render={() => <Images />} />
+				<Route path='/' render={() => <Redirect to='/home' />} />
 			</Switch>
 		</HashRouter>
 	) : (
@@ -30,6 +31,7 @@ const Application = () => {
 					path='/reset-password'
 					render={() => <ResetPassword />}
 				/>
+				<Route path='/' render={() => <Redirect to='/sign-in' />} />
 			</Switch>
 		</HashRouter>
 	);

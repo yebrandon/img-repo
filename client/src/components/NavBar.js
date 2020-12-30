@@ -63,7 +63,11 @@ const NavBar = () => {
 						onChange={handleChange}
 					>
 						<Tab component='a' label='Home' href='/#/home' />
-						<Tab component='a' label='Photos' href='/#/photos' />
+						<Tab
+							component='a'
+							label=' Your Images'
+							href='/#/images'
+						/>
 					</Tabs>
 					<Button
 						onClick={() => {
