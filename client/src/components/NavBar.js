@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Logo from '../img/logo.png';
 import {
 	AppBar,
 	Toolbar,
 	Tabs,
 	Tab,
-	Box,
 	Typography,
 	IconButton,
 	Button
@@ -14,18 +11,8 @@ import {
 import { makeStyles } from '@material-ui/core/styles';
 import ImageIcon from '@material-ui/icons/Image';
 import { auth } from '../firebase';
-
-function LinkTab(props) {
-	return (
-		<Tab
-			component='a'
-			onClick={(event) => {
-				event.preventDefault();
-			}}
-			{...props}
-		/>
-	);
-}
+import SignInDialog from './SignInDialog';
+import { Link, useLocation } from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
 	logo: {
@@ -36,10 +23,36 @@ const useStyles = makeStyles((theme) => ({
 
 const NavBar = () => {
 	const classes = useStyles();
-	const [value, setValue] = useState(0);
+	let location = useLocation();
+	const renderSignInOut = () => {
+		if (auth.currentUser) {
+			return (
+				<Button
+					className='button'
+					color='inherit'
+					onClick={() => {
+						auth.signOut();
+					}}
+				>
+					Sign Out
+				</Button>
+			);
+		} else {
+			return <SignInDialog className='button' buttonType='button' />;
+		}
+	};
 
-	const handleChange = (event, newValue) => {
-		setValue(newValue);
+	const renderTabs = () => {
+		if (auth.currentUser) {
+			return (
+				<Tab
+					label=' Your Images'
+					value='/images'
+					component={Link}
+					to='/images'
+				/>
+			);
+		}
 	};
 
 	return (
@@ -57,27 +70,16 @@ const NavBar = () => {
 					<Typography variant='h6' className={classes.title}>
 						ImgRepo
 					</Typography>
-					<Tabs
-						variant='fullWidth'
-						value={value}
-						onChange={handleChange}
-					>
-						<Tab component='a' label='Home' href='/#/home' />
+					<Tabs variant='fullWidth' value={location.pathname}>
 						<Tab
-							component='a'
-							label=' Your Images'
-							href='/#/images'
+							label='Home'
+							value='/home'
+							component={Link}
+							to='/home'
 						/>
+						{renderTabs()}
 					</Tabs>
-					<Button
-						onClick={() => {
-							auth.signOut();
-						}}
-						className='button'
-						color='inherit'
-					>
-						Sign Out
-					</Button>
+					{renderSignInOut()}
 				</Toolbar>
 			</AppBar>
 			<Toolbar />

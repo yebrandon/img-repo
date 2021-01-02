@@ -1,27 +1,15 @@
 import React, { useState } from 'react';
 import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
-import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
-import Link from '@material-ui/core/Link';
 import Grid from '@material-ui/core/Grid';
-import Box from '@material-ui/core/Box';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
+import SignInDialog from './SignInDialog';
 
-import { auth, firestore, addUser } from '../firebase';
-
-const Footer = () => {
-	return (
-		<Typography variant='body2' color='textSecondary' align='center'>
-			<Link color='inherit' href='https://github.com/yebrandon/img-repo'>
-				View on Github
-			</Link>
-		</Typography>
-	);
-};
+import { auth, addUser, firestore } from '../firebase';
 
 const useStyles = makeStyles((theme) => ({
 	paper: {
@@ -44,6 +32,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const SignUp = () => {
+	const [displayName, setDisplayName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState(null);
@@ -53,21 +42,43 @@ const SignUp = () => {
 	const handleSubmit = (event) => {
 		event.preventDefault();
 		console.log('sign up button');
-		auth.createUserWithEmailAndPassword(email, password)
-			.then((user) => {
-				addUser(user);
+
+		const usersRef = firestore.collection('users');
+
+		usersRef
+			.where('displayName', '==', displayName)
+			.get()
+			.then((querySnapshot) => {
+				if (querySnapshot.docs.length === 0) {
+					auth.createUserWithEmailAndPassword(email, password)
+						.then((userCredential) => {
+							return userCredential.user
+								.updateProfile({ displayName: displayName })
+								.then(
+									addUser(
+										userCredential.user,
+										email,
+										displayName
+									)
+								);
+						})
+						.catch((error) => {
+							setError(error.message);
+						});
+					setDisplayName('');
+					setEmail('');
+					setPassword('');
+				} else {
+					setError('Username is already taken!');
+				}
 			})
-			.catch((error) => {
-				console.log(error);
-				setError(error.message);
+			.catch(function (error) {
+				console.log('Error getting documents: ', error);
 			});
-		setEmail('');
-		setPassword('');
 	};
 
 	return (
 		<Container component='main' maxWidth='xs'>
-			<CssBaseline />
 			<div className={classes.paper}>
 				<Avatar className={classes.avatar}>
 					<LockOutlinedIcon />
@@ -76,9 +87,27 @@ const SignUp = () => {
 					Sign up
 				</Typography>
 				<form className={classes.form} onSubmit={handleSubmit}>
-					<Grid container spacing={2}>
+					<Grid container spacing={1}>
 						<Grid item xs={12}>
 							<TextField
+								value={displayName}
+								variant='outlined'
+								margin='normal'
+								required
+								fullWidth
+								id='displayName'
+								label='Username'
+								name='displayName'
+								autoComplete='displayName'
+								autoFocus
+								onChange={(event) => {
+									setDisplayName(event.target.value);
+								}}
+							/>
+						</Grid>
+						<Grid item xs={12}>
+							<TextField
+								value={email}
 								variant='outlined'
 								margin='normal'
 								required
@@ -95,6 +124,7 @@ const SignUp = () => {
 						</Grid>
 						<Grid item xs={12}>
 							<TextField
+								value={password}
 								variant='outlined'
 								margin='normal'
 								required
@@ -120,18 +150,13 @@ const SignUp = () => {
 					>
 						Sign Up
 					</Button>
-					<Grid container justify='flex-end'>
-						<Grid item>
-							<Link href='#/sign-in' variant='body2'>
-								Already have an account? Sign in
-							</Link>
-						</Grid>
-					</Grid>
 				</form>
+				<Grid container justify='flex-end'>
+					<Grid item>
+						<SignInDialog buttonType='link' />
+					</Grid>
+				</Grid>
 			</div>
-			<Box mt={5}>
-				<Footer />
-			</Box>
 		</Container>
 	);
 };

@@ -10,10 +10,8 @@ import Images from './Images';
 
 const Application = () => {
 	const user = useContext(UserContext);
-	console.log(user);
 	return user ? (
 		<HashRouter basename='/'>
-			<NavBar />
 			<Switch>
 				<Route exact path='/' render={() => <Home />} />
 				<Route path='/home' render={() => <Home />} />
@@ -24,14 +22,14 @@ const Application = () => {
 	) : (
 		<HashRouter basename='/'>
 			<Switch>
-				<Route exact path='/' render={() => <SignIn />} />
-				<Route path='/sign-in' render={() => <SignIn />} />
+				<Route exact path='/' render={() => <Home />} />
+				<Route path='/home' render={() => <Home />} />
 				<Route path='/sign-up' render={() => <SignUp />} />
 				<Route
 					path='/reset-password'
 					render={() => <ResetPassword />}
 				/>
-				<Route path='/' render={() => <Redirect to='/sign-in' />} />
+				<Route path='/' render={() => <Redirect to='/home' />} />
 			</Switch>
 		</HashRouter>
 	);

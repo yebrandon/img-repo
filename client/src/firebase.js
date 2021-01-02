@@ -10,27 +10,27 @@ export const auth = firebase.auth();
 export const firestore = firebase.firestore();
 export const storage = firebase.storage();
 
-export const addUser = async (user) => {
+export const addUser = async (user, email, displayName) => {
 	if (user) {
 		const userRef = firestore.doc(`users/${user.uid}`);
 		const snapshot = await userRef.get();
-
 		if (!snapshot.exists) {
-			const email = user.email;
-			if (email) {
-				try {
-					userRef.set({
-						email: email
-					});
-				} catch (error) {
-					console.error('Error creating user document', error);
-				}
+			try {
+				await userRef.set({
+					email: email,
+					displayName: displayName
+				});
+			} catch (error) {
+				console.error('Error creating user document', error);
 			}
 		}
 		return getUserDocument(user.uid);
+	} else {
+		console.log('error');
 	}
 };
-const getUserDocument = async (uid) => {
+
+export const getUserDocument = async (uid) => {
 	if (!uid) return null;
 	try {
 		const userDocument = await firestore.doc(`users/${uid}`).get();
