@@ -1,117 +1,127 @@
 import React, { useState, useEffect } from 'react';
 import {
 	Button,
-	FormControlLabel,
-	Checkbox,
 	Paper,
 	Tabs,
-	Tab
+	Tab,
+	Card,
+	CardContent,
+	CardMedia,
+	CardActions,
+	IconButton
 } from '@material-ui/core';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+import { CloudUpload, Delete } from '@material-ui/icons';
 import { auth, storage } from '../firebase';
 import NavBar from './NavBar';
 
 const Images = () => {
 	const [uploads, setUploads] = useState([]);
-	const [privateUpload, setPrivateUpload] = useState(false);
-	const [loading, setLoading] = useState(false);
 	const [progress, setProgress] = useState(0);
-	const [imageURLs, setImageURLs] = useState([]);
-	const [viewType, setViewType] = useState('public');
+	const [images, setImages] = useState([]);
+	const [view, setView] = useState('public');
 	const [error, setError] = useState('');
-	let folderRef;
+	const storageRef = storage.ref(
+		view === 'private'
+			? `images/private/${auth.currentUser.displayName}`
+			: 'images/public'
+	);
 
-	useEffect(() => {
-		setImageURLs([]);
-		viewType === 'private' ? loadPrivate() : loadPublic();
-	}, [viewType]);
-
-	const loadPrivate = () => {
-		folderRef = storage.ref(
-			`images/private/${auth.currentUser.displayName}`
-		);
-
-		folderRef.list({ maxResults: 20 }).then((images) => {
-			images.items.forEach((imageRef) => {
-				imageRef.getDownloadURL().then((url) => {
-					setImageURLs((prevState) => [...prevState, url]);
-				});
-			});
-		});
-	};
-
-	const loadPublic = () => {
-		folderRef = storage.ref('images/public');
-
-		folderRef.list({ maxResults: 20 }).then((images) => {
-			images.items.forEach((imageRef) => {
-				imageRef.getDownloadURL().then((url) => {
-					imageRef.getMetadata().then((metadata) => {
-						if (
-							metadata.customMetadata.uploadedBy ===
-							auth.currentUser.displayName
-						) {
-							setImageURLs((prevState) => [...prevState, url]);
-						}
+	const loadImages = async () => {
+		// use promise all to upload bulk rather than one after another?
+		setImages([]);
+		storageRef.list({ maxResults: 100 }).then((files) => {
+			files.items.forEach((file) => {
+				file.getDownloadURL().then((url) => {
+					file.getMetadata().then((metadata) => {
+						setImages((prevState) => [
+							...prevState,
+							{
+								url,
+								uploadedBy: metadata.customMetadata.uploadedBy,
+								name: file.name,
+								date: metadata.timeCreated
+							}
+						]);
 					});
 				});
 			});
 		});
 	};
 
-	const switchView = (event, newValue) => {
-		setViewType(newValue);
+	useEffect(() => {
+		console.log('useEffect');
+
+		const filterPublic = () => {
+			return images.filter(
+				(image) => image.uploadedBy === auth.currentUser.displayName
+			);
+		};
+
+		loadImages().then(() => {
+			if (view === 'public') {
+				filterPublic();
+			} //clean up sort and it doesn't rly work
+			images.sort((a, b) =>
+				Date.parse(a.date) > Date.parse(b.date)
+					? 1
+					: Date.parse(b.date) > Date.parse(a.date)
+					? -1
+					: 0
+			);
+		});
+	}, [view]);
+
+	const switchView = (e, newValue) => {
+		setView(newValue);
 	};
 
-	const handleChoose = (event) => {
-		setLoading(true);
-		setUploads(Array.from(event.target.files));
-		console.log(event.target.files);
-		setLoading(false);
-	};
-
-	const handleCheck = (event) => {
-		setPrivateUpload(event.target.checked);
+	const handleSelect = (e) => {
+		setUploads(Array.from(e.target.files));
 	};
 
 	const handleUpload = () => {
-		const promises = uploads.map((upload) => {
-			let storageRef;
-			if (privateUpload) {
-				storageRef = storage.ref(
-					`images/private/${auth.currentUser.displayName}/${upload.name}`
-				);
-			} else {
-				storageRef = storage.ref(`images/public/${upload.name}`);
-			}
-
+		const allUploads = uploads.map((upload) => {
 			const metadata = {
 				customMetadata: {
 					uploadedBy: auth.currentUser.displayName
 				}
 			};
-
-			const uploadTask = storageRef.put(upload, metadata);
+			const fileRef = storageRef.child(upload.name);
+			const uploadTask = fileRef.put(upload, metadata);
 			uploadTask.on(
 				'state_changed',
 				(snapshot) => {
-					const progress = Math.round(
-						(snapshot.bytesTransferred / snapshot.totalBytes) * 100
+					setProgress(
+						Math.round(
+							(snapshot.bytesTransferred / snapshot.totalBytes) *
+								100
+						)
 					);
-					setProgress(progress);
 				},
 				(error) => {
 					setError(error);
 				},
 				() => {
-					storageRef.getDownloadURL().then((url) => {
-						console.log(url);
+					fileRef.getDownloadURL().then((url) => {
+						fileRef.getMetadata().then((metadata) => {
+							setImages((prevState) => [
+								...prevState,
+								{
+									url,
+									uploadedBy:
+										metadata.customMetadata.uploadedBy,
+									name: storageRef.name,
+									date: metadata.timeCreated
+								}
+							]);
+						});
 					});
 				}
 			);
 			return uploadTask;
 		});
-		Promise.all(promises)
+
+		Promise.all(allUploads)
 			.then(() => {
 				console.log('All files uploaded');
 				setUploads([]);
@@ -119,20 +129,48 @@ const Images = () => {
 			.catch((error) => setError(error));
 	};
 
+	const handleDelete = (name) => {
+		storageRef
+			.child(name)
+			.delete()
+			.then(() => {
+				setImages(images.filter((image) => image.name !== name));
+			})
+			.catch((error) => {
+				setError(error);
+			});
+	};
+
 	const renderImages = () => {
-		return imageURLs.map((url, index) => {
-			return <img key={index} src={url} />;
+		console.log('render');
+		return images.map((image, index) => {
+			return (
+				<Card key={index}>
+					<CardMedia component='img' src={image.url} />
+					<CardContent>
+						{image.uploadedBy}
+						{image.date}
+					</CardContent>
+					<CardActions disableSpacing>
+						<IconButton
+							onClick={() => {
+								handleDelete(image.name);
+							}}
+						>
+							<Delete />
+						</IconButton>
+					</CardActions>
+				</Card>
+			);
 		});
 	};
 
-	const renderLoading = () => {
-		if (loading) {
-			return <div>Loading...</div>;
-		} else if (uploads.length > 0) {
+	const renderSelection = () => {
+		if (uploads.length > 0) {
 			if (uploads.length === 1) {
 				return uploads[0].name;
 			} else {
-				return <div>Selected {uploads.length} images</div>;
+				return <div>Selected {uploads.length} files</div>;
 			}
 		}
 	};
@@ -149,29 +187,20 @@ const Images = () => {
 		<div>
 			<NavBar />
 			<Button variant='contained' component='label'>
-				Choose upload(s)
+				Select upload(s)
 				<input
 					type='file'
 					accept='image/*'
 					hidden
-					onChange={handleChoose}
+					onChange={handleSelect}
 					multiple
 				/>
 			</Button>
-			<FormControlLabel
-				control={
-					<Checkbox
-						checked={privateUpload}
-						onChange={handleCheck}
-						name='private'
-					/>
-				}
-				label='Private'
-			/>
-			{renderLoading()}
+
+			{renderSelection()}
 			{renderProgress()}
 			<Button
-				startIcon={<CloudUploadIcon />}
+				startIcon={<CloudUpload />}
 				variant='contained'
 				component='label'
 				onClick={handleUpload}
@@ -181,7 +210,7 @@ const Images = () => {
 			</Button>
 			<Paper square>
 				<Tabs
-					value={viewType}
+					value={view}
 					indicatorColor='primary'
 					textColor='primary'
 					onChange={switchView}
@@ -191,6 +220,7 @@ const Images = () => {
 				</Tabs>
 			</Paper>
 			{error}
+			{images.length}
 			{renderImages()}
 		</div>
 	);
