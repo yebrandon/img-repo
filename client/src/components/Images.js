@@ -8,11 +8,44 @@ import {
 	CardContent,
 	CardMedia,
 	CardActions,
-	IconButton
+	IconButton,
+	Container,
+	GridList,
+	GridListTile,
+	GridListTileBar,
+	CircularProgress,
+	LinearProgress,
+	Divider,
+	Box
 } from '@material-ui/core';
 import { CloudUpload, Delete } from '@material-ui/icons';
 import { auth, storage } from '../firebase';
 import NavBar from './NavBar';
+import { makeStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles((theme) => ({
+	gridList: { width: '100%', height: '100%' },
+	gridTile: { width: '25%', height: '25%' },
+	titleBar: {
+		background:
+			'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, ' +
+			'rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)'
+	},
+	icon: {
+		color: 'white'
+	},
+	progressBar: {},
+	divider: { margin: 10 },
+	toolBar: {
+		flexDirection: 'row',
+		display: 'flex',
+		alignItems: 'center'
+	},
+	uploadGroup: {
+		alignItems: 'center',
+		marginLeft: 'auto'
+	}
+}));
 
 const Images = () => {
 	const [uploads, setUploads] = useState([]);
@@ -26,21 +59,22 @@ const Images = () => {
 			: 'images/public'
 	);
 
+	const classes = useStyles();
+
 	const loadImages = async () => {
-		// use promise all to upload bulk rather than one after another?
 		setImages([]);
 		storageRef.list({ maxResults: 100 }).then((files) => {
 			files.items.forEach((file) => {
 				file.getDownloadURL().then((url) => {
 					file.getMetadata().then((metadata) => {
 						setImages((prevState) => [
-							...prevState,
 							{
 								url,
 								uploadedBy: metadata.customMetadata.uploadedBy,
 								name: file.name,
 								date: metadata.timeCreated
-							}
+							},
+							...prevState
 						]);
 					});
 				});
@@ -105,14 +139,14 @@ const Images = () => {
 					fileRef.getDownloadURL().then((url) => {
 						fileRef.getMetadata().then((metadata) => {
 							setImages((prevState) => [
-								...prevState,
 								{
 									url,
 									uploadedBy:
 										metadata.customMetadata.uploadedBy,
 									name: storageRef.name,
 									date: metadata.timeCreated
-								}
+								},
+								...prevState
 							]);
 						});
 					});
@@ -125,6 +159,7 @@ const Images = () => {
 			.then(() => {
 				console.log('All files uploaded');
 				setUploads([]);
+				setProgress(0);
 			})
 			.catch((error) => setError(error));
 	};
@@ -142,27 +177,31 @@ const Images = () => {
 	};
 
 	const renderImages = () => {
-		console.log('render');
-		return images.map((image, index) => {
-			return (
-				<Card key={index}>
-					<CardMedia component='img' src={image.url} />
-					<CardContent>
-						{image.uploadedBy}
-						{image.date}
-					</CardContent>
-					<CardActions disableSpacing>
-						<IconButton
-							onClick={() => {
-								handleDelete(image.name);
-							}}
-						>
-							<Delete />
-						</IconButton>
-					</CardActions>
-				</Card>
-			);
-		});
+		return (
+			<GridList cellHeight='400' cols='4' className={classes.gridList}>
+				{images.map((image, index) => (
+					<GridListTile className={classes.gridTile} key={index}>
+						<img src={image.url} alt='' />
+						<GridListTileBar
+							className={classes.titleBar}
+							title={image.uploadedBy}
+							subtitle={new Date(image.date).toDateString()}
+							titlePosition='top'
+							actionIcon={
+								<IconButton
+									onClick={() => {
+										handleDelete(image.name);
+									}}
+									className={classes.icon}
+								>
+									<Delete />
+								</IconButton>
+							}
+						/>
+					</GridListTile>
+				))}
+			</GridList>
+		);
 	};
 
 	const renderSelection = () => {
@@ -176,52 +215,55 @@ const Images = () => {
 	};
 
 	const renderProgress = () => {
-		if (progress < 100) {
-			return <progress value={progress} max='100' />;
-		} else {
-			return <p>Done!</p>;
-		}
+		return (
+			<LinearProgress
+				className={classes.progressBar}
+				variant='determinate'
+				value={progress}
+			/>
+		);
 	};
 
 	return (
 		<div>
 			<NavBar />
-			<Button variant='contained' component='label'>
-				Select upload(s)
-				<input
-					type='file'
-					accept='image/*'
-					hidden
-					onChange={handleSelect}
-					multiple
-				/>
-			</Button>
-
-			{renderSelection()}
-			{renderProgress()}
-			<Button
-				startIcon={<CloudUpload />}
-				variant='contained'
-				component='label'
-				onClick={handleUpload}
-				disabled={uploads.length < 1}
-			>
-				Upload
-			</Button>
-			<Paper square>
+			<Paper square className={classes.toolBar}>
 				<Tabs
 					value={view}
 					indicatorColor='primary'
 					textColor='primary'
 					onChange={switchView}
+					variant='fullWidth'
 				>
 					<Tab value='public' label='Public' />
 					<Tab value='private' label='Private' />
 				</Tabs>
+				<Box className={classes.uploadGroup}>
+					{renderSelection()}
+					<Button variant='contained' component='label'>
+						Select upload(s)
+						<input
+							type='file'
+							accept='image/*'
+							hidden
+							onChange={handleSelect}
+							multiple
+						/>
+					</Button>
+					<Button
+						startIcon={<CloudUpload />}
+						variant='contained'
+						component='label'
+						onClick={handleUpload}
+						disabled={uploads.length < 1}
+					>
+						Upload
+					</Button>
+				</Box>
 			</Paper>
+			{renderProgress()}
 			{error}
-			{images.length}
-			{renderImages()}
+			<div>{renderImages()}</div>
 		</div>
 	);
 };

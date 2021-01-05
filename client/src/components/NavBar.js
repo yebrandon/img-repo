@@ -13,22 +13,27 @@ import ImageIcon from '@material-ui/icons/Image';
 import { auth } from '../firebase';
 import SignInDialog from './SignInDialog';
 import { Link, useLocation } from 'react-router-dom';
+import GitHubIcon from '@material-ui/icons/GitHub';
 
 const useStyles = makeStyles((theme) => ({
 	logo: {
 		marginRight: theme.spacing(2)
 	},
-	button: { float: 'right' }
+	button: {
+		marginLeft: 'auto',
+		marginRight: 30
+	}
 }));
 
 const NavBar = () => {
 	const classes = useStyles();
 	let location = useLocation();
+
 	const renderSignInOut = () => {
 		if (auth.currentUser) {
 			return (
 				<Button
-					className='button'
+					className={classes.button}
 					color='inherit'
 					onClick={() => {
 						auth.signOut();
@@ -38,7 +43,9 @@ const NavBar = () => {
 				</Button>
 			);
 		} else {
-			return <SignInDialog className='button' buttonType='button' />;
+			return (
+				<SignInDialog className={classes.button} buttonType='button' />
+			);
 		}
 	};
 
@@ -67,9 +74,7 @@ const NavBar = () => {
 					>
 						<ImageIcon />
 					</IconButton>
-					<Typography variant='h6' className={classes.title}>
-						ImgRepo
-					</Typography>
+					<Typography variant='h6'>ImgRepo</Typography>
 					<Tabs variant='fullWidth' value={location.pathname}>
 						<Tab
 							label='Home'
@@ -80,6 +85,14 @@ const NavBar = () => {
 						{renderTabs()}
 					</Tabs>
 					{renderSignInOut()}
+					<IconButton
+						edge='start'
+						color='inherit'
+						aria-label='menu'
+						href='https://github.com/yebrandon/img-repo'
+					>
+						<GitHubIcon />
+					</IconButton>
 				</Toolbar>
 			</AppBar>
 			<Toolbar />
