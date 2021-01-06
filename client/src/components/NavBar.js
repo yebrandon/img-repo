@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
 	AppBar,
 	Toolbar,
@@ -6,50 +6,28 @@ import {
 	Tab,
 	Typography,
 	IconButton,
-	Button
+	Button,
+	Box
 } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
 import ImageIcon from '@material-ui/icons/Image';
-import { auth } from '../firebase';
-import SignInDialog from './SignInDialog';
-import { Link, useLocation } from 'react-router-dom';
 import GitHubIcon from '@material-ui/icons/GitHub';
+import { makeStyles } from '@material-ui/core/styles';
+import { auth } from '../firebase';
+import { Link, useLocation } from 'react-router-dom';
+import SignInDialog from './SignInDialog';
 
 const useStyles = makeStyles((theme) => ({
 	logo: {
 		marginRight: theme.spacing(2)
 	},
-	button: {
-		marginLeft: 'auto',
-		marginRight: 30
-	}
+	actionGroup: { marginLeft: 'auto' }
 }));
 
 const NavBar = () => {
 	const classes = useStyles();
-	let location = useLocation();
+	const location = useLocation();
 
-	const renderSignInOut = () => {
-		if (auth.currentUser) {
-			return (
-				<Button
-					className={classes.button}
-					color='inherit'
-					onClick={() => {
-						auth.signOut();
-					}}
-				>
-					Sign Out
-				</Button>
-			);
-		} else {
-			return (
-				<SignInDialog className={classes.button} buttonType='button' />
-			);
-		}
-	};
-
-	const renderTabs = () => {
+	const renderImageTab = () => {
 		if (auth.currentUser) {
 			return (
 				<Tab
@@ -59,6 +37,23 @@ const NavBar = () => {
 					to='/images'
 				/>
 			);
+		}
+	};
+
+	const renderSignInOut = () => {
+		if (auth.currentUser) {
+			return (
+				<Button
+					color='inherit'
+					onClick={() => {
+						auth.signOut();
+					}}
+				>
+					Sign Out
+				</Button>
+			);
+		} else {
+			return <SignInDialog color='inherit' entryType='button' />;
 		}
 	};
 
@@ -82,17 +77,19 @@ const NavBar = () => {
 							component={Link}
 							to='/home'
 						/>
-						{renderTabs()}
+						{renderImageTab()}
 					</Tabs>
-					{renderSignInOut()}
-					<IconButton
-						edge='start'
-						color='inherit'
-						aria-label='menu'
-						href='https://github.com/yebrandon/img-repo'
-					>
-						<GitHubIcon />
-					</IconButton>
+					<Box className={classes.actionGroup}>
+						{renderSignInOut()}
+						<IconButton
+							edge='end'
+							color='inherit'
+							aria-label='menu'
+							href='https://github.com/yebrandon/img-repo'
+						>
+							<GitHubIcon />
+						</IconButton>
+					</Box>
 				</Toolbar>
 			</AppBar>
 			<Toolbar />

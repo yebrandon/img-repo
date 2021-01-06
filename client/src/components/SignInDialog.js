@@ -1,26 +1,19 @@
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import {
 	Button,
 	Dialog,
-	DialogContent,
 	TextField,
 	Typography,
 	Link,
 	Avatar,
 	FormControlLabel,
 	Checkbox,
-	Container,
-	Grid,
-	Paper
+	Grid
 } from '@material-ui/core';
-
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-
+import ImageIcon from '@material-ui/icons/Image';
 import { makeStyles } from '@material-ui/core/styles';
-
-import { auth } from '../firebase';
-
 import firebase from 'firebase/app';
+import { auth } from '../firebase';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -45,22 +38,21 @@ const useStyles = makeStyles((theme) => ({
 	}
 }));
 
-const SignInDialog = ({ buttonType }) => {
-	const classes = useStyles();
-
+const SignInDialog = ({ entryType }) => {
 	const [open, setOpen] = useState(false);
-
-	const handleOpenClose = () => {
-		setOpen(!open);
-	};
-
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [remember, setRemember] = useState(true);
 	const [error, setError] = useState(null);
 
-	const handleSignIn = (event) => {
-		event.preventDefault();
+	const classes = useStyles();
+
+	const handleOpenClose = () => {
+		setOpen(!open);
+	};
+
+	const handleSignIn = (e) => {
+		e.preventDefault();
 
 		const persistanceType = remember
 			? firebase.auth.Auth.Persistence.LOCAL
@@ -75,8 +67,8 @@ const SignInDialog = ({ buttonType }) => {
 			});
 	};
 
-	const renderButton = () => {
-		if (buttonType === 'button') {
+	const renderEntry = () => {
+		if (entryType === 'button') {
 			return (
 				<Button color='inherit' onClick={handleOpenClose}>
 					Sign In
@@ -96,12 +88,12 @@ const SignInDialog = ({ buttonType }) => {
 	};
 
 	return (
-		<div>
-			{renderButton()}
+		<Fragment>
+			{renderEntry()}
 			<Dialog maxWidth='xs' onClose={handleOpenClose} open={open}>
 				<div className={classes.paper}>
 					<Avatar className={classes.avatar}>
-						<LockOutlinedIcon />
+						<ImageIcon />
 					</Avatar>
 					<Typography component='h1' variant='h5'>
 						Sign in
@@ -121,8 +113,8 @@ const SignInDialog = ({ buttonType }) => {
 							name='email'
 							autoComplete='email'
 							autoFocus
-							onChange={(event) => {
-								setEmail(event.target.value);
+							onChange={(e) => {
+								setEmail(e.target.value);
 							}}
 						/>
 						<TextField
@@ -135,8 +127,8 @@ const SignInDialog = ({ buttonType }) => {
 							type='password'
 							id='password'
 							autoComplete='current-password'
-							onChange={(event) => {
-								setPassword(event.target.value);
+							onChange={(e) => {
+								setPassword(e.target.value);
 							}}
 						/>
 						<FormControlLabel
@@ -144,8 +136,8 @@ const SignInDialog = ({ buttonType }) => {
 								<Checkbox value='remember' color='primary' />
 							}
 							label='Remember me'
-							onChange={(event) => {
-								setRemember(event.target.checked);
+							onChange={(e) => {
+								setRemember(e.target.checked);
 							}}
 						/>
 						{error}
@@ -173,7 +165,7 @@ const SignInDialog = ({ buttonType }) => {
 					</form>
 				</div>
 			</Dialog>
-		</div>
+		</Fragment>
 	);
 };
 

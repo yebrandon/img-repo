@@ -1,8 +1,6 @@
 import React, { useContext } from 'react';
 import { HashRouter, Switch, Route, Redirect } from 'react-router-dom';
-import NavBar from './NavBar';
 import Home from './Home';
-import SignIn from './SignIn';
 import SignUp from './SignUp';
 import ResetPassword from './ResetPassword';
 import { UserContext } from '../UserProvider';
