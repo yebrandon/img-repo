@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
 	GridList,
 	GridListTile,
 	GridListTileBar,
-	IconButton
+	IconButton,
+	makeStyles
 } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
 import Delete from '@material-ui/icons/Delete';
-import { auth } from '../firebase';
 
 const useGridStyles = makeStyles(() => ({
 	gridList: { width: '100%', height: '100%' },
@@ -20,6 +19,7 @@ const useGridStyles = makeStyles(() => ({
 	icon: {
 		color: 'white'
 	},
+	// Allow image to fill tile and maintain aspect ratio
 	picture: {
 		minWidth: '100%',
 		minHeight: '100%',
@@ -30,45 +30,10 @@ const useGridStyles = makeStyles(() => ({
 	}
 }));
 
-const ImageGrid = ({ enableDelete, filterUsers, storageRef, newImages }) => {
-	const [images, setImages] = useState([]);
+const ImageGrid = ({ images, handleDelete = null }) => {
 	const gridStyles = useGridStyles();
 
-	useEffect(() => {
-		const loadAllImages = async () => {
-			setImages([]);
-			storageRef.list({ maxResults: 100 }).then((files) => {
-				files.items.forEach((fileRef) => {
-					loadImage(fileRef);
-				});
-			});
-		};
-
-		loadAllImages().then(() => {
-			if (filterUsers) {
-				images.filter(
-					(image) => image.uploadedBy === auth.currentUser.displayName
-				);
-			}
-		});
-	}, [storageRef, filterUsers, newImages]);
-
-	const loadImage = (fileRef) => {
-		fileRef.getDownloadURL().then((url) => {
-			fileRef.getMetadata().then((metadata) => {
-				setImages((prevState) => [
-					{
-						url,
-						uploadedBy: metadata.customMetadata.uploadedBy,
-						name: fileRef.name,
-						date: metadata.timeCreated
-					},
-					...prevState
-				]);
-			});
-		});
-	};
-
+	// Sorts images by date in descending order when used with .sort
 	const sortByDate = (image1, image2) => {
 		const date1 = Date.parse(image1.date);
 		const date2 = Date.parse(image2.date);
@@ -81,20 +46,8 @@ const ImageGrid = ({ enableDelete, filterUsers, storageRef, newImages }) => {
 		return 0;
 	};
 
-	const handleDelete = (name) => {
-		storageRef
-			.child(name)
-			.delete()
-			.then(() => {
-				setImages(images.filter((image) => image.name !== name));
-			})
-			.catch((err) => {
-				return err;
-			});
-	};
-
 	return (
-		<GridList cellHeight='400' cols={4} className={gridStyles.gridList}>
+		<GridList cellHeight={400} cols={4} className={gridStyles.gridList}>
 			{images
 				.sort((image1, image2) => sortByDate(image1, image2))
 				.map((image, index) => (
@@ -115,11 +68,18 @@ const ImageGrid = ({ enableDelete, filterUsers, storageRef, newImages }) => {
 						</a>
 						<GridListTileBar
 							className={gridStyles.gridTitleBar}
-							title={image.uploadedBy}
-							subtitle={new Date(image.date).toDateString()}
+							title={
+								image.name.slice(
+									0,
+									image.name.indexOf('|')
+								) /* Display image name with username removed*/
+							}
+							subtitle={`${image.uploadedBy} - ${new Date(
+								image.date
+							).toDateString()}`}
 							titlePosition='top'
 							actionIcon={
-								enableDelete ? (
+								handleDelete ? (
 									<IconButton
 										onClick={() => {
 											handleDelete(image.name);
@@ -128,7 +88,7 @@ const ImageGrid = ({ enableDelete, filterUsers, storageRef, newImages }) => {
 									>
 										<Delete />
 									</IconButton>
-								) : null
+								) : null /* Don't render delete button if not specified */
 							}
 						/>
 					</GridListTile>

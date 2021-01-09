@@ -8,7 +8,8 @@ import {
 	Avatar,
 	FormControlLabel,
 	Checkbox,
-	Grid
+	Grid,
+	Box
 } from '@material-ui/core';
 import ImageIcon from '@material-ui/icons/Image';
 import { makeStyles } from '@material-ui/core/styles';
@@ -30,7 +31,7 @@ const useStyles = makeStyles((theme) => ({
 		backgroundColor: theme.palette.secondary.main
 	},
 	form: {
-		width: '100%', // Fix IE 11 issue.
+		width: '100%', // Fix IE 11 issue
 		marginTop: theme.spacing(1)
 	},
 	submit: {
@@ -42,8 +43,8 @@ const SignInDialog = ({ entryType }) => {
 	const [open, setOpen] = useState(false);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
-	const [remember, setRemember] = useState(true);
-	const [error, setError] = useState(null);
+	const [remember, setRemember] = useState(false);
+	const [error, setError] = useState('');
 
 	const classes = useStyles();
 
@@ -62,8 +63,12 @@ const SignInDialog = ({ entryType }) => {
 			.then(() => {
 				return auth.signInWithEmailAndPassword(email, password);
 			})
-			.catch((error) => {
-				setError(error.message);
+			.catch((err) => {
+				console.error(err);
+				if (err.code === 'auth/wrong-password') {
+					setError('Incorrect password.');
+				}
+				setError('There was an error signing in.');
 			});
 	};
 
@@ -91,13 +96,21 @@ const SignInDialog = ({ entryType }) => {
 		<Fragment>
 			{renderEntry()}
 			<Dialog maxWidth='xs' onClose={handleOpenClose} open={open}>
-				<div className={classes.paper}>
+				<Box className={classes.paper}>
 					<Avatar className={classes.avatar}>
 						<ImageIcon />
 					</Avatar>
-					<Typography component='h1' variant='h5'>
+
+					<Typography variant='h5' gutterBottom>
 						Sign in
 					</Typography>
+
+					<Typography align='center' variant='caption'>
+						Psst, if you want to test out the application, you can
+						sign in with the email "johndoe@gmail.com" and the
+						password "admin123"!
+					</Typography>
+
 					<form
 						className={classes.form}
 						noValidate
@@ -117,6 +130,7 @@ const SignInDialog = ({ entryType }) => {
 								setEmail(e.target.value);
 							}}
 						/>
+
 						<TextField
 							variant='outlined'
 							margin='normal'
@@ -131,6 +145,7 @@ const SignInDialog = ({ entryType }) => {
 								setPassword(e.target.value);
 							}}
 						/>
+
 						<FormControlLabel
 							control={
 								<Checkbox value='remember' color='primary' />
@@ -140,7 +155,9 @@ const SignInDialog = ({ entryType }) => {
 								setRemember(e.target.checked);
 							}}
 						/>
-						{error}
+
+						<Typography color='error'>{error}</Typography>
+
 						<Button
 							type='submit'
 							fullWidth
@@ -150,6 +167,7 @@ const SignInDialog = ({ entryType }) => {
 						>
 							Sign In
 						</Button>
+
 						<Grid container>
 							<Grid item xs>
 								<Link href='/#/reset-password' variant='body2'>
@@ -163,7 +181,7 @@ const SignInDialog = ({ entryType }) => {
 							</Grid>
 						</Grid>
 					</form>
-				</div>
+				</Box>
 			</Dialog>
 		</Fragment>
 	);

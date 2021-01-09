@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import {
 	AppBar,
 	Toolbar,
@@ -7,27 +7,30 @@ import {
 	Typography,
 	IconButton,
 	Button,
-	Box
+	Box,
+	makeStyles
 } from '@material-ui/core';
 import ImageIcon from '@material-ui/icons/Image';
 import GitHubIcon from '@material-ui/icons/GitHub';
-import { makeStyles } from '@material-ui/core/styles';
-import { auth } from '../firebase';
 import { Link, useLocation } from 'react-router-dom';
+import { auth } from '../firebase';
 import SignInDialog from './SignInDialog';
 
-const useStyles = makeStyles((theme) => ({
+const useNavStyles = makeStyles((theme) => ({
 	logo: {
 		marginRight: theme.spacing(2)
 	},
-	actionGroup: { marginLeft: 'auto' }
+	actionGroup: { marginLeft: 'auto' },
+	userName: {
+		marginRight: theme.spacing(2)
+	}
 }));
 
 const NavBar = () => {
-	const classes = useStyles();
+	const navStyles = useNavStyles();
 	const location = useLocation();
 
-	const renderImageTab = () => {
+	const renderImagesTab = () => {
 		if (auth.currentUser) {
 			return (
 				<Tab
@@ -43,14 +46,23 @@ const NavBar = () => {
 	const renderSignInOut = () => {
 		if (auth.currentUser) {
 			return (
-				<Button
-					color='inherit'
-					onClick={() => {
-						auth.signOut();
-					}}
-				>
-					Sign Out
-				</Button>
+				<Fragment>
+					<Typography
+						className={navStyles.userName}
+						variant='body'
+						display='inline'
+					>
+						{auth.currentUser.displayName}
+					</Typography>
+					<Button
+						color='inherit'
+						onClick={() => {
+							auth.signOut();
+						}}
+					>
+						Sign Out
+					</Button>
+				</Fragment>
 			);
 		} else {
 			return <SignInDialog color='inherit' entryType='button' />;
@@ -59,27 +71,37 @@ const NavBar = () => {
 
 	return (
 		<React.Fragment>
-			<AppBar position='fixed'>
+			<AppBar position='fixed' color='primary'>
 				<Toolbar>
 					<IconButton
 						edge='start'
-						className={classes.logo}
+						className={navStyles.logo}
 						color='inherit'
 						aria-label='menu'
 					>
 						<ImageIcon />
 					</IconButton>
+
 					<Typography variant='h6'>ImgRepo</Typography>
-					<Tabs variant='fullWidth' value={location.pathname}>
+
+					<Tabs
+						variant='fullWidth'
+						value={
+							location.pathname.length > 1
+								? location.pathname
+								: '/home' // select home tab if there is no route provided
+						}
+					>
 						<Tab
 							label='Home'
 							value='/home'
 							component={Link}
 							to='/home'
 						/>
-						{renderImageTab()}
+						{renderImagesTab()}
 					</Tabs>
-					<Box className={classes.actionGroup}>
+
+					<Box className={navStyles.actionGroup}>
 						{renderSignInOut()}
 						<IconButton
 							edge='end'

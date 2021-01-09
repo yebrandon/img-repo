@@ -3,13 +3,12 @@ import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Grid from '@material-ui/core/Grid';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
+import ImageIcon from '@material-ui/icons/Image';
 import Typography from '@material-ui/core/Typography';
-import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
-import SignInDialog from './SignInDialog';
-
+import { makeStyles } from '@material-ui/core/styles';
 import { auth, addUser, firestore } from '../firebase';
+import SignInDialog from './SignInDialog';
 
 const useStyles = makeStyles((theme) => ({
 	paper: {
@@ -23,7 +22,7 @@ const useStyles = makeStyles((theme) => ({
 		backgroundColor: theme.palette.secondary.main
 	},
 	form: {
-		width: '100%', // Fix IE 11 issue.
+		width: '100%', // Fix IE 11 issue
 		marginTop: theme.spacing(3)
 	},
 	submit: {
@@ -34,129 +33,161 @@ const useStyles = makeStyles((theme) => ({
 const SignUp = () => {
 	const [displayName, setDisplayName] = useState('');
 	const [email, setEmail] = useState('');
-	const [password, setPassword] = useState('');
+	const [passwordOne, setPasswordOne] = useState('');
+	const [passwordTwo, setPasswordTwo] = useState('');
 	const [error, setError] = useState(null);
 
-	const classes = useStyles();
+	const styles = useStyles();
 
-	const handleSubmit = (event) => {
-		event.preventDefault();
-		console.log('sign up button');
+	const handleSubmit = (e) => {
+		e.preventDefault();
 
-		const usersRef = firestore.collection('users');
+		if (passwordOne === passwordTwo) {
+			const usersRef = firestore.collection('users');
+			usersRef
+				.where('displayName', '==', displayName)
+				.get()
+				.then((querySnapshot) => {
+					// Check if username is taken
+					if (querySnapshot.docs.length === 0) {
+						auth.createUserWithEmailAndPassword(email, passwordOne)
+							.then((userCredential) => {
+								return userCredential.user
+									.updateProfile({ displayName: displayName })
+									.then(
+										addUser(
+											userCredential.user,
+											email,
+											displayName
+										)
+									);
+							})
+							.catch((err) => {
+								console.error(err);
+								setError('Error creating account.');
+							});
 
-		usersRef
-			.where('displayName', '==', displayName)
-			.get()
-			.then((querySnapshot) => {
-				if (querySnapshot.docs.length === 0) {
-					auth.createUserWithEmailAndPassword(email, password)
-						.then((userCredential) => {
-							return userCredential.user
-								.updateProfile({ displayName: displayName })
-								.then(
-									addUser(
-										userCredential.user,
-										email,
-										displayName
-									)
-								);
-						})
-						.catch((error) => {
-							setError(error.message);
-						});
-					setDisplayName('');
-					setEmail('');
-					setPassword('');
-				} else {
-					setError('Username is already taken!');
-				}
-			})
-			.catch(function (error) {
-				console.log('Error getting documents: ', error);
-			});
+						setDisplayName('');
+						setEmail('');
+						setPasswordOne('');
+						setPasswordTwo('');
+					} else {
+						setError('Username is already taken!');
+					}
+				})
+				.catch(function (err) {
+					console.error(err);
+					setError('Error getting user document.');
+				});
+		} else {
+			setError('Passwords do not match.');
+		}
 	};
 
 	return (
-		<Container component='main' maxWidth='xs'>
-			<div className={classes.paper}>
-				<Avatar className={classes.avatar}>
-					<LockOutlinedIcon />
-				</Avatar>
-				<Typography component='h1' variant='h5'>
-					Sign up
-				</Typography>
-				<form className={classes.form} onSubmit={handleSubmit}>
-					<Grid container spacing={1}>
-						<Grid item xs={12}>
-							<TextField
-								value={displayName}
-								variant='outlined'
-								margin='normal'
-								required
-								fullWidth
-								id='displayName'
-								label='Username'
-								name='displayName'
-								autoComplete='displayName'
-								autoFocus
-								onChange={(event) => {
-									setDisplayName(event.target.value);
-								}}
-							/>
-						</Grid>
-						<Grid item xs={12}>
-							<TextField
-								value={email}
-								variant='outlined'
-								margin='normal'
-								required
-								fullWidth
-								id='email'
-								label='Email Address'
-								name='email'
-								autoComplete='email'
-								autoFocus
-								onChange={(event) => {
-									setEmail(event.target.value);
-								}}
-							/>
-						</Grid>
-						<Grid item xs={12}>
-							<TextField
-								value={password}
-								variant='outlined'
-								margin='normal'
-								required
-								fullWidth
-								name='password'
-								label='Password'
-								type='password'
-								id='password'
-								autoComplete='current-password'
-								onChange={(event) => {
-									setPassword(event.target.value);
-								}}
-							/>
-						</Grid>
-						{error}
+		<Container className={styles.paper} component='main' maxWidth='xs'>
+			<Avatar className={styles.avatar}>
+				<ImageIcon />
+			</Avatar>
+
+			<Typography component='h1' variant='h5'>
+				Sign up
+			</Typography>
+
+			<form className={styles.form} onSubmit={handleSubmit}>
+				<Grid container spacing={1}>
+					<Grid item xs={12}>
+						<TextField
+							value={displayName}
+							variant='outlined'
+							margin='normal'
+							required
+							fullWidth
+							id='displayName'
+							label='Username'
+							name='displayName'
+							autoComplete='displayName'
+							autoFocus
+							onChange={(e) => {
+								setDisplayName(
+									e.target.value.replace(/[^A-Z0-9]/gi, '')
+								); // Prevent spaces and special chars
+							}}
+						/>
 					</Grid>
-					<Button
-						type='submit'
-						fullWidth
-						variant='contained'
-						color='primary'
-						className={classes.submit}
-					>
-						Sign Up
-					</Button>
-				</form>
-				<Grid container justify='flex-end'>
-					<Grid item>
-						<SignInDialog buttonType='link' />
+
+					<Grid item xs={12}>
+						<TextField
+							value={email}
+							variant='outlined'
+							margin='normal'
+							required
+							fullWidth
+							id='email'
+							label='Email Address'
+							name='email'
+							autoComplete='email'
+							onChange={(e) => {
+								setEmail(e.target.value);
+							}}
+						/>
 					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							value={passwordOne}
+							variant='outlined'
+							margin='normal'
+							required
+							fullWidth
+							name='passwordOne'
+							label='Password'
+							type='password'
+							id='passwordOne'
+							autoComplete='current-password'
+							onChange={(e) => {
+								setPasswordOne(e.target.value.trim()); // Prevent spaces
+							}}
+						/>
+					</Grid>
+
+					<Grid item xs={12}>
+						<TextField
+							value={passwordTwo}
+							variant='outlined'
+							margin='normal'
+							required
+							fullWidth
+							name='passwordTwo'
+							label='Confirm Password'
+							type='password'
+							id='passwordTwo'
+							autoComplete='current-password'
+							onChange={(e) => {
+								setPasswordTwo(e.target.value.trim());
+							}}
+						/>
+					</Grid>
+
+					<Typography color='error'>{error}</Typography>
 				</Grid>
-			</div>
+
+				<Button
+					type='submit'
+					fullWidth
+					variant='contained'
+					color='primary'
+					className={styles.submit}
+				>
+					Sign Up
+				</Button>
+			</form>
+
+			<Grid container justify='flex-end'>
+				<Grid item>
+					<SignInDialog buttonType='link' />
+				</Grid>
+			</Grid>
 		</Container>
 	);
 };

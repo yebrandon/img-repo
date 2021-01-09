@@ -20,25 +20,28 @@ export const addUser = async (user, email, displayName) => {
 					email: email,
 					displayName: displayName
 				});
-			} catch (error) {
-				console.error('Error creating user document', error);
+			} catch (err) {
+				console.error('Error creating user document', err);
 			}
 		}
-		return getUserDocument(user.uid);
+		return getUser(user.uid);
 	} else {
-		console.log('error');
+		console.error('No user provided');
 	}
 };
 
-export const getUserDocument = async (uid) => {
-	if (!uid) return null;
-	try {
-		const userDocument = await firestore.doc(`users/${uid}`).get();
-		return {
-			uid,
-			...userDocument.data()
-		};
-	} catch (error) {
-		console.error('Error fetching user', error);
+export const getUser = async (uid) => {
+	if (uid) {
+		try {
+			const userDocument = await firestore.doc(`users/${uid}`).get();
+			return {
+				uid,
+				...userDocument.data()
+			};
+		} catch (err) {
+			console.error('Error fetching user document', err);
+		}
+	} else {
+		console.error('No UID provided to fetch user');
 	}
 };

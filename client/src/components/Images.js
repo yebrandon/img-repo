@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
 	Button,
 	Paper,
@@ -6,10 +6,10 @@ import {
 	Tab,
 	LinearProgress,
 	Box,
-	Typography
+	Typography,
+	makeStyles
 } from '@material-ui/core';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
-import { makeStyles } from '@material-ui/core/styles';
 import { auth, storage } from '../firebase';
 import NavBar from './NavBar';
 import ImageGrid from './ImageGrid';
@@ -28,66 +28,135 @@ const useActionStyles = makeStyles((theme) => ({
 }));
 
 const Images = () => {
-	const [storageRef, setStorageRef] = useState(storage.ref('images/public'));
+	const [images, setImages] = useState([]);
 	const [view, setView] = useState('public');
 	const [uploads, setUploads] = useState([]);
-	const [progress, setProgress] = useState(0);
 	const [error, setError] = useState('');
-	const [newImages, setNewImages] = useState([]);
+	const [loading, setLoading] = useState(false);
+
 	const actionStyles = useActionStyles();
+	const storageRef = storage.ref(
+		view === 'private'
+			? `images/private/${auth.currentUser.displayName}`
+			: 'images/public'
+	);
+
+	const loadImage = (fileRef) => {
+		// Returns true if image was uploaded by current user
+		const filterCurrUser = (metadata) => {
+			if (
+				(view === 'public' &&
+					metadata.customMetadata.uploadedBy ===
+						auth.currentUser.displayName) ||
+				view !== 'public'
+			) {
+				return true;
+			}
+			return false;
+		};
+
+		fileRef.getDownloadURL().then((url) => {
+			fileRef.getMetadata().then((metadata) => {
+				if (filterCurrUser(metadata)) {
+					setImages((prevState) => [
+						{
+							url,
+							uploadedBy: metadata.customMetadata.uploadedBy,
+							name: fileRef.name,
+							date: metadata.timeCreated
+						},
+						...prevState
+					]);
+				}
+			});
+		});
+	};
+
+	useEffect(() => {
+		const loadAllImages = () => {
+			storageRef.list({ maxResults: 100 }).then((files) => {
+				files.items.forEach((fileRef) => {
+					loadImage(fileRef);
+				});
+			});
+		};
+
+		setImages([]);
+		setError('');
+		loadAllImages();
+	}, [view]);
 
 	const switchView = (e, newValue) => {
 		setView(newValue);
-		setStorageRef(
-			storage.ref(
-				newValue === 'private'
-					? `images/private/${auth.currentUser.displayName}`
-					: 'images/public'
-			)
-		);
 	};
 
 	const handleSelect = (e) => {
+		setError('');
 		setUploads(Array.from(e.target.files));
 	};
 
 	const handleUpload = () => {
+		setLoading(true);
+
 		const allUploads = uploads.map((upload) => {
-			const metadata = {
-				customMetadata: {
-					uploadedBy: auth.currentUser.displayName
-				}
-			};
-			const fileRef = storageRef.child(upload.name);
-			const uploadTask = fileRef.put(upload, metadata);
-			uploadTask.on(
-				'state_changed',
-				(snapshot) => {
-					setProgress(
-						Math.round(
-							(snapshot.bytesTransferred / snapshot.totalBytes) *
-								100
-						)
+			return new Promise((resolve) => {
+				const fullUploadName = `${upload.name}|${auth.currentUser.displayName}`;
+
+				const imageNames = images.map((image) => {
+					return image.name;
+				});
+
+				if (!imageNames.includes(fullUploadName)) {
+					// Check if image with same name was already uploaded bu user
+					const metadata = {
+						customMetadata: {
+							uploadedBy: auth.currentUser.displayName
+						}
+					};
+					const fileRef = storageRef.child(fullUploadName);
+					const uploadTask = fileRef.put(upload, metadata);
+					uploadTask.on(
+						'state_changed',
+						() => {},
+						() => {
+							setError('Error uploading files');
+						},
+						() => {
+							loadImage(fileRef);
+							resolve('success');
+						}
 					);
-				},
-				() => {
-					setError('Error uploading files');
-				},
-				() => {
-					setNewImages((prevState) => [...newImages, ...prevState]);
+				} else {
+					setError(`${upload.name} already exists!`);
+					setLoading(false);
 				}
-			);
-			return uploadTask;
+			});
 		});
 
+		// Reset UI once all uploads are finished
 		Promise.all(allUploads).then(() => {
 			setUploads([]);
-			setProgress(0);
+			setLoading(false);
 		});
+	};
+
+	const handleDelete = (name) => {
+		setError('');
+		storageRef
+			.child(name)
+			.delete()
+			.then(() => {
+				setImages(images.filter((image) => image.name !== name));
+			})
+			.catch((err) => {
+				console.error(err);
+				setError('Error deleting image');
+			});
 	};
 
 	const renderSelection = () => {
 		let selectionText;
+
 		if (uploads.length === 1) {
 			selectionText = uploads[0].name;
 		} else if (uploads.length > 0) {
@@ -104,6 +173,7 @@ const Images = () => {
 	return (
 		<div>
 			<NavBar />
+
 			<Paper square className={actionStyles.toolBar}>
 				<Tabs
 					value={view}
@@ -115,7 +185,9 @@ const Images = () => {
 					<Tab value='public' label='Public' />
 					<Tab value='private' label='Private' />
 				</Tabs>
+
 				<Typography color='error'>{error}</Typography>
+
 				<Box className={actionStyles.uploadGroup}>
 					{renderSelection()}
 					<Button variant='contained' component='label'>
@@ -139,17 +211,14 @@ const Images = () => {
 					</Button>
 				</Box>
 			</Paper>
+
 			<LinearProgress
+				variant={loading ? 'indeterminate' : 'determinate'}
 				className={actionStyles.progressBar}
-				variant='determinate'
-				value={progress}
+				value={0}
 			/>
-			<ImageGrid
-				enableDelete={true}
-				filterUsers={true}
-				storageRef={storageRef}
-				newImages={newImages}
-			/>
+
+			<ImageGrid images={images} handleDelete={handleDelete} />
 		</div>
 	);
 };

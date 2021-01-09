@@ -1,8 +1,8 @@
 import React from 'react';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import './App.css';
 import UserProvider from './UserProvider';
 import Application from './components/Application';
+import './App.css';
 
 const App = () => {
 	return (
