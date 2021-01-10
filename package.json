@@ -1,23 +1,22 @@
 {
   "name": "img-repo",
   "version": "1.0.0",
-  "description": "image repository built with React and Node.js",
+  "description": "image repository built with React and Firebase",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yebrandon/react-node-boilerplate.git"
+    "url": "git+https://github.com/yebrandon/img-repo.git"
   },
   "author": "Brandon Ye",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/yebrandon/react-node-boilerplate/issues"
+    "url": "https://github.com/yebrandon/img-repo/issues"
   },
-  "homepage": "https://github.com/yebrandon/react-node-boilerplate#readme",
+  "homepage": "https://github.com/yebrandon/img-repo#readme",
   "dependencies": {
-    "express": "^4.17.1",
     "firebase": "^8.2.1"
   }
 }
